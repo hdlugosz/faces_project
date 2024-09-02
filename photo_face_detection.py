@@ -1,0 +1,88 @@
+#Do konwersji heic->jpg: https://pypi.org/project/heic-to-jpg/ 
+import cv2
+import dlib
+import numpy as np
+import os
+from imutils import face_utils
+
+# Ustawienia
+input_folder = './<<input_folder>>'  # Ścieżka do folderu z obrazami
+output_folder = './<<output_folder>>'  # Ścieżka do folderu na przetworzone obrazy
+
+# Utwórz katalog wyjściowy, jeśli nie istnieje
+os.makedirs(output_folder, exist_ok=True)
+
+# Ładowanie detektora twarzy i kształtu
+detector = dlib.get_frontal_face_detector()
+predictor = dlib.shape_predictor('./shape_predictor_68_face_landmarks.dat')
+
+# Funkcja do wyrównania obrazu
+def align_image(image, image_path):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    faces = detector(gray)
+
+    if len(faces) > 0:
+        landmarks = predictor(gray, faces[0])
+        landmarks_np = face_utils.shape_to_np(landmarks)
+
+        left_eye = landmarks_np[36:42]  # Punkty dla lewego oka
+        right_eye = landmarks_np[42:48]  # Punkty dla prawego oka
+
+        # Obliczanie środka źrenicy dla lewego i prawego oka
+        left_eye_center = np.mean(left_eye, axis=0).astype("float")
+        right_eye_center = np.mean(right_eye, axis=0).astype("float")
+
+        # Obliczenie środka oczu
+        eyes_center = ((left_eye_center[0] + right_eye_center[0]) / 2.0,
+                       (left_eye_center[1] + right_eye_center[1]) / 2.0)
+
+        # Ustal pożądane położenie oczu na podstawie szerokości obrazu
+        desired_eye_x_left = int(image.shape[1] * 0.40)  # Ustal X dla lewego oka
+        desired_eye_x_right = int(image.shape[1] * 0.60)  # Ustal X dla prawego oka
+        desired_eye_y = int(image.shape[0] * 0.40)  # Ustal Y dla obu oczu
+
+        # Obliczanie różnicy wysokości pomiędzy oczami
+        delta_y = right_eye_center[1] - left_eye_center[1]
+        delta_x = right_eye_center[0] - left_eye_center[0]
+        
+        # Obliczanie kąta obrotu
+        angle = np.degrees(np.arctan2(delta_y, delta_x))
+
+        # Obliczanie odległości pomiędzy oczami
+        current_eye_distance = np.linalg.norm(right_eye_center - left_eye_center)
+        desired_distance = desired_eye_x_right - desired_eye_x_left
+
+        # Obliczanie skali
+        scale = desired_distance / current_eye_distance
+
+        # Obliczanie przesunięcia
+        x_translation = (desired_eye_x_left + desired_eye_x_right) / 2 - eyes_center[0]
+        y_translation = desired_eye_y - eyes_center[1]
+
+        # Stworzenie macierzy transformacji (z rotacją i skalą)
+        M = cv2.getRotationMatrix2D(eyes_center, angle, scale)  # Obrót o obliczony kąt
+        M[0, 2] += x_translation
+        M[1, 2] += y_translation
+
+        # Przesunięcie obrazu
+        aligned_image = cv2.warpAffine(image, M, (image.shape[1], image.shape[0]))
+
+        return aligned_image
+    else:
+        print("Nie znaleziono twarzy na zdj: " + image_path)
+    return image
+
+
+i = 1
+# Przetwarzanie wszystkich zdjęć w folderze
+for filename in os.listdir(input_folder):
+    if filename.endswith('.jpg') or filename.endswith('.png'):
+        print(i)
+        image_path = os.path.join(input_folder, filename)
+        image = cv2.imread(image_path)
+
+        aligned_image = align_image(image, image_path)
+
+        cv2.imwrite(os.path.join(output_folder, filename), aligned_image)
+        i=i+1
+print("Przetwarzanie zakończone.")
