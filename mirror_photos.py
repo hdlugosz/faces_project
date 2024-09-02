@@ -1,26 +1,26 @@
 import os
 from PIL import Image
 
-# Ścieżka do katalogu ze zdjęciami
+# Path to the directory containing images
 input_folder = './<<input_folder>>'
-# Ścieżka do katalogu, w którym chcesz zapisać odbicia lustrzane
+# Path to the directory where you want to save mirrored images
 output_folder = './<<output_folder>>'
 
-# Utwórz katalog wyjściowy, jeśli nie istnieje
+# Create the output directory if it does not exist
 os.makedirs(output_folder, exist_ok=True)
 
-# Przetwarzanie każdego pliku w katalogu
+# Processing each file in the directory
 for filename in os.listdir(input_folder):
-    if filename.lower().endswith(('.png', '.jpg', '.jpeg')):  # Sprawdź, czy plik jest obrazem
-        # Ładowanie obrazu
+    if filename.lower().endswith(('.png', '.jpg', '.jpeg')):  # Check if the file is an image
+        # Loading the image
         img_path = os.path.join(input_folder, filename)
         img = Image.open(img_path)
         
-        # Odwracanie obrazu lustrzanie
+        # Flipping the image horizontally
         img_mirrored = img.transpose(Image.FLIP_LEFT_RIGHT)
         
-        # Zapisz odwrócony obraz w nowym katalogu
+        # Save the mirrored image in the new directory
         output_path = os.path.join(output_folder, filename)
         img_mirrored.save(output_path)
 
-print("Przetwarzanie zakończone!")
+print("Processing completed!")
