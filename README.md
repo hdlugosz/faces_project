@@ -1,6 +1,6 @@
 Instruction for me from the future:: 
 
-Download the required packages
+Download the required packages. 
 In each script, update the "input_folder" and "output_folder" variables
 
 1. Download `shape_predictor_68_face_landmarks.dat` (https://github.com/italojs/facial-landmarks-recognition/blob/master/shape_predictor_68_face_landmarks.dat) and put it in the same directory as scripts
